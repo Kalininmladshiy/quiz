@@ -24,7 +24,9 @@ touch .env
 ```
 python -m venv <название виртуального окружения>
 ```
-
+```
+source venv/bin/activate
+```
 ### 4. Устанавливаем библиотеки:
 ```
 pip install -r requirements.txt
