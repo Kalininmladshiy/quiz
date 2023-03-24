@@ -6,7 +6,7 @@ from telegram.ext import CallbackContext
 from telegram.ext import CommandHandler, ConversationHandler
 from telegram.ext import Updater
 from telegram.ext import MessageHandler, Filters
-from main import get_questions_answers, get_random_question
+from quiz_questions import get_questions_answers, get_random_question
 
 
 REDIS_CONNECT = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)

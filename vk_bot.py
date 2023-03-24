@@ -8,7 +8,7 @@ from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 
 from dotenv import load_dotenv
 
-from main import get_questions_answers, get_random_question
+from quiz_questions import get_questions_answers, get_random_question
 
 REDIS_CONNECT = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
 
