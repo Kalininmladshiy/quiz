@@ -1,11 +1,16 @@
 import os
+import argparse
 import redis
+
 from dotenv import load_dotenv
+from pathlib import Path
+
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import CallbackContext
 from telegram.ext import CommandHandler, ConversationHandler
 from telegram.ext import Updater
 from telegram.ext import MessageHandler, Filters
+
 from quiz_questions import get_questions_answers, get_random_question
 
 
@@ -24,10 +29,10 @@ def start(update: Update, context: CallbackContext):
     return QUESTION
 
 
-def handle_new_question_request(update: Update, context: CallbackContext):
+def handle_new_question_request(update: Update, context: CallbackContext, path):
     keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
     reply_markup = ReplyKeyboardMarkup(keyboard)
-    questions_and_answers = get_questions_answers()
+    questions_and_answers = get_questions_answers(path)
     question = get_random_question(questions_and_answers)
     context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -37,10 +42,10 @@ def handle_new_question_request(update: Update, context: CallbackContext):
     REDIS_CONNECT.set(update.effective_chat.id, question)
 
 
-def handle_solution_attempt(update: Update, context: CallbackContext):
+def handle_solution_attempt(update: Update, context: CallbackContext, path):
     keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
     reply_markup = ReplyKeyboardMarkup(keyboard)
-    questions_and_answers = get_questions_answers()
+    questions_and_answers = get_questions_answers(path)
     if update.message.text.lower() == questions_and_answers[
         REDIS_CONNECT.get(update.effective_chat.id)
     ]:
@@ -57,10 +62,10 @@ def handle_solution_attempt(update: Update, context: CallbackContext):
         )
 
 
-def surrender(update: Update, context: CallbackContext):
+def surrender(update: Update, context: CallbackContext, path):
     keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
     reply_markup = ReplyKeyboardMarkup(keyboard)
-    questions_and_answers = get_questions_answers()
+    questions_and_answers = get_questions_answers(path)
     answer = questions_and_answers[REDIS_CONNECT.get(update.effective_chat.id)]
     context.bot.send_message(
         chat_id=update.effective_chat.id,
@@ -83,12 +88,31 @@ def main():
     updater = Updater(token=tg_token)
     dispatcher = updater.dispatcher
 
+    parser = argparse.ArgumentParser(
+        description='Программа загрузки вопросов и ответов из .txt файла'
+    )
+    parser.add_argument(
+        '--path',
+        default=Path.cwd() / 'questions_for_quiz',
+        help='адрес с .txt файлом',
+    )
+    args = parser.parse_args()
+
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
-            QUESTION: [MessageHandler(Filters.regex(r'^Новый вопрос$'), handle_new_question_request),
-                       MessageHandler(Filters.regex(r'^Сдаться$'), surrender),
-                       MessageHandler(Filters.text & (~Filters.command), handle_solution_attempt),
+            QUESTION: [MessageHandler(
+                Filters.regex(r'^Новый вопрос$'),
+                lambda update, context: handle_new_question_request(update, context, args.path),
+            ),
+                       MessageHandler(
+                Filters.regex(r'^Сдаться$'),
+                lambda update, context: surrender(update, context, args.path),
+            ),
+                       MessageHandler(
+                Filters.text & (~Filters.command),
+                lambda update, context: handle_solution_attempt(update, context, args.path),
+            ),
                        ],
         },
         fallbacks=[

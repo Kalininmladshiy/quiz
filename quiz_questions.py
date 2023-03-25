@@ -17,13 +17,12 @@ def get_files_names(path):
     return files_names
 
 
-def get_questions_answers():
+def get_questions_answers(path_to_files):
     remove_chars = {ord(','): None, ord(':'): None, ord('.'): None, ord('"'): None}
-    path_to_files = Path.cwd() / 'questions_for_quiz'
     files_names = get_files_names(path_to_files)
     questions = []
     answers = []
-    with open(path_to_files / files_names[-1], "r", encoding="KOI8-R") as my_file:
+    with open(os.path.join(path_to_files, files_names[-1]), "r", encoding="KOI8-R") as my_file:
         file_contents = my_file.read().split('\n\n')
     for string in file_contents:
         if 'Вопрос' in string:
