@@ -1,12 +1,14 @@
 import random
 import os
 import redis
+import argparse
 
 import vk_api as vk
 from vk_api.longpoll import VkLongPoll, VkEventType
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 
 from dotenv import load_dotenv
+from pathlib import Path
 
 from quiz_questions import get_questions_answers, get_random_question
 
@@ -24,8 +26,8 @@ def create_keyboard():
     return keyboard.get_keyboard()
 
 
-def handle_new_question_request(event, vk_api):
-    questions_and_answers = get_questions_answers()
+def handle_new_question_request(event, vk_api, path):
+    questions_and_answers = get_questions_answers(path)
     question = get_random_question(questions_and_answers)
     vk_api.messages.send(
         user_id=event.user_id,
@@ -36,8 +38,8 @@ def handle_new_question_request(event, vk_api):
     REDIS_CONNECT.set(event.user_id, question)
 
 
-def handle_solution_attempt(event, vk_api):
-    questions_and_answers = get_questions_answers()
+def handle_solution_attempt(event, vk_api, path):
+    questions_and_answers = get_questions_answers(path)
     if event.text.lower() == questions_and_answers[REDIS_CONNECT.get(event.user_id)]:
         vk_api.messages.send(
             user_id=event.user_id,
@@ -54,8 +56,8 @@ def handle_solution_attempt(event, vk_api):
         )
 
 
-def surrender(event, vk_api):
-    questions_and_answers = get_questions_answers()
+def surrender(event, vk_api, path):
+    questions_and_answers = get_questions_answers(path)
     answer = questions_and_answers[REDIS_CONNECT.get(event.user_id)]
     vk_api.messages.send(
         user_id=event.user_id,
@@ -79,12 +81,22 @@ if __name__ == "__main__":
     vk_session = vk.VkApi(token=vk_token)
     vk_api = vk_session.get_api()
 
+    parser = argparse.ArgumentParser(
+        description='Программа загрузки вопросов и ответов из .txt файла'
+    )
+    parser.add_argument(
+        '--path',
+        default=Path.cwd() / 'questions_for_quiz',
+        help='адрес с .txt файлом',
+    )
+    args = parser.parse_args()
+
     longpoll = VkLongPoll(vk_session)
     for event in longpoll.listen():
         if event.type == VkEventType.MESSAGE_NEW and event.to_me:
             if event.text == "Сдаться":
-                surrender(event, vk_api)
+                surrender(event, vk_api, args.path)
             elif event.text == "Новый вопрос":
-                handle_new_question_request(event, vk_api)
+                handle_new_question_request(event, vk_api, args.path)
             else:
-                handle_solution_attempt(event, vk_api)
+                handle_solution_attempt(event, vk_api, args.path)
