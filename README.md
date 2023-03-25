@@ -41,6 +41,13 @@ python bot.py
 python vk_bot.py
 ```
 
+### Путь к .txt файлу с вопросами.
+Вы можете указать свой путь к .txt файлам с вопросами. По умолчанию используется папка с названием questions_for_quiz,
+расположенная в папке с проектом
+```
+python bot.py --path /home/folder1/folder2/questions_for_quiz
+```
+
 ## Возможные ошибки при запуске.  
 Проект использует технологию Redis для кэширования вопросов, поэтому при первом запуске вы можете 
 столкнуться со следующе ошибкой `ConnectionRefusedError: [Errno 111] Connection refused`.  
