@@ -16,7 +16,7 @@ from quiz_questions import get_questions_answers
 
 env = Env()
 env.read_env()
-QUESTION = 1
+QUESTION, SOLUTION = range(2)
 
 
 def start(update: Update, context: CallbackContext):
@@ -40,6 +40,7 @@ def handle_new_question_request(update: Update, context: CallbackContext, questi
         reply_markup=reply_markup,
     )
     redis_connect.set(update.effective_chat.id, question)
+    return SOLUTION
 
 
 def handle_solution_attempt(update: Update, context: CallbackContext, questions_and_answers):
@@ -53,6 +54,7 @@ def handle_solution_attempt(update: Update, context: CallbackContext, questions_
             text="Правильно! Для продолжения нажми 'Новый вопрос'",
             reply_markup=reply_markup,
         )
+        return QUESTION
     else:
         context.bot.send_message(
             chat_id=update.effective_chat.id,
@@ -77,6 +79,7 @@ def surrender(update: Update, context: CallbackContext, questions_and_answers):
         reply_markup=reply_markup,
     )
     redis_connect.set(update.effective_chat.id, question)
+    return SOLUTION
 
 
 def main():
@@ -103,17 +106,18 @@ def main():
             QUESTION: [MessageHandler(
                 Filters.regex(r'^Новый вопрос$'),
                 lambda update, context: handle_new_question_request(update, context, questions_and_answers),
-            ),
-                       MessageHandler(
-                Filters.regex(r'^Сдаться$'),
-                lambda update, context: surrender(update, context, questions_and_answers),
-            ),
-                       MessageHandler(
-                Filters.text & (~Filters.command),
-                lambda update, context: handle_solution_attempt(update, context, questions_and_answers),
-            ),
-                       ],
-        },
+            )],
+            SOLUTION: [
+                MessageHandler(
+                    Filters.regex(r'^Сдаться$'),
+                    lambda update, context: surrender(update, context, questions_and_answers),
+                ),
+                MessageHandler(
+                    Filters.text & (~Filters.command),
+                    lambda update, context: handle_solution_attempt(update, context, questions_and_answers),
+                )
+            ],
+               },
         fallbacks=[
             CommandHandler('start', start),
         ]
