@@ -129,8 +129,8 @@ def main():
 
 if __name__ == '__main__':
     host = env.str('ALLOWED_HOSTS', 'localhost')
-    decode_responses = env.bool('DEBUG', True)
+    decode_responses = env.bool('DECODE_RESPONSES', True)
     port = env.str('PORT', '6379')
-    db = env.str('PORT', '0')
+    db = env.str('DB', '0')
     redis_connect = redis.Redis(host=host, port=port, db=db, decode_responses=decode_responses)
     main()
