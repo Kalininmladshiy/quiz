@@ -12,8 +12,6 @@ from pathlib import Path
 
 from quiz_questions import get_questions_answers
 
-REDIS_CONNECT = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
-
 
 def create_keyboard():
     keyboard = VkKeyboard(one_time=False)
@@ -26,8 +24,7 @@ def create_keyboard():
     return keyboard.get_keyboard()
 
 
-def handle_new_question_request(event, vk_api, path):
-    questions_and_answers = get_questions_answers(path)
+def handle_new_question_request(event, vk_api, questions_and_answers):
     question = random.choice(list(questions_and_answers))
     vk_api.messages.send(
         user_id=event.user_id,
@@ -35,12 +32,11 @@ def handle_new_question_request(event, vk_api, path):
         random_id=random.randint(1, 1000),
         keyboard=create_keyboard(),
     )
-    REDIS_CONNECT.set(event.user_id, question)
+    redis_connect.set(event.user_id, question)
 
 
-def handle_solution_attempt(event, vk_api, path):
-    questions_and_answers = get_questions_answers(path)
-    if event.text.lower() == questions_and_answers[REDIS_CONNECT.get(event.user_id)]:
+def handle_solution_attempt(event, vk_api, questions_and_answers):
+    if event.text.lower() == questions_and_answers[redis_connect.get(event.user_id)]:
         vk_api.messages.send(
             user_id=event.user_id,
             message="Правильно! Для продолжения нажми 'Новый вопрос'",
@@ -56,9 +52,8 @@ def handle_solution_attempt(event, vk_api, path):
         )
 
 
-def surrender(event, vk_api, path):
-    questions_and_answers = get_questions_answers(path)
-    answer = questions_and_answers[REDIS_CONNECT.get(event.user_id)]
+def surrender(event, vk_api, questions_and_answers):
+    answer = questions_and_answers[redis_connect.get(event.user_id)]
     vk_api.messages.send(
         user_id=event.user_id,
         message=f"Вот тебе правильный ответ {answer}",
@@ -72,10 +67,11 @@ def surrender(event, vk_api, path):
         random_id=random.randint(1, 1000),
         keyboard=create_keyboard(),
     )
-    REDIS_CONNECT.set(event.user_id, question)
+    redis_connect.set(event.user_id, question)
 
 
 if __name__ == "__main__":
+    redis_connect = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
     load_dotenv()
     vk_token = os.getenv("VK_BOT_TOKEN")
     vk_session = vk.VkApi(token=vk_token)
@@ -91,12 +87,14 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    questions_and_answers = get_questions_answers(args.path)
+
     longpoll = VkLongPoll(vk_session)
     for event in longpoll.listen():
         if event.type == VkEventType.MESSAGE_NEW and event.to_me:
             if event.text == "Сдаться":
-                surrender(event, vk_api, args.path)
+                surrender(event, vk_api, questions_and_answers)
             elif event.text == "Новый вопрос":
-                handle_new_question_request(event, vk_api, args.path)
+                handle_new_question_request(event, vk_api, questions_and_answers)
             else:
-                handle_solution_attempt(event, vk_api, args.path)
+                handle_solution_attempt(event, vk_api, questions_and_answers)

@@ -15,7 +15,6 @@ from telegram.ext import MessageHandler, Filters
 from quiz_questions import get_questions_answers
 
 
-REDIS_CONNECT = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
 QUESTION = 1
 
 
@@ -30,25 +29,23 @@ def start(update: Update, context: CallbackContext):
     return QUESTION
 
 
-def handle_new_question_request(update: Update, context: CallbackContext, path):
+def handle_new_question_request(update: Update, context: CallbackContext, questions_and_answers):
     keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
     reply_markup = ReplyKeyboardMarkup(keyboard)
-    questions_and_answers = get_questions_answers(path)
     question = random.choice(list(questions_and_answers))
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=question,
         reply_markup=reply_markup,
     )
-    REDIS_CONNECT.set(update.effective_chat.id, question)
+    redis_connect.set(update.effective_chat.id, question)
 
 
-def handle_solution_attempt(update: Update, context: CallbackContext, path):
+def handle_solution_attempt(update: Update, context: CallbackContext, questions_and_answers):
     keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
     reply_markup = ReplyKeyboardMarkup(keyboard)
-    questions_and_answers = get_questions_answers(path)
     if update.message.text.lower() == questions_and_answers[
-        REDIS_CONNECT.get(update.effective_chat.id)
+        redis_connect.get(update.effective_chat.id)
     ]:
         context.bot.send_message(
             chat_id=update.effective_chat.id,
@@ -63,11 +60,10 @@ def handle_solution_attempt(update: Update, context: CallbackContext, path):
         )
 
 
-def surrender(update: Update, context: CallbackContext, path):
+def surrender(update: Update, context: CallbackContext, questions_and_answers):
     keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
     reply_markup = ReplyKeyboardMarkup(keyboard)
-    questions_and_answers = get_questions_answers(path)
-    answer = questions_and_answers[REDIS_CONNECT.get(update.effective_chat.id)]
+    answer = questions_and_answers[redis_connect.get(update.effective_chat.id)]
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=f"Вот тебе правильный ответ {answer}",
@@ -79,7 +75,7 @@ def surrender(update: Update, context: CallbackContext, path):
         text=question,
         reply_markup=reply_markup,
     )
-    REDIS_CONNECT.set(update.effective_chat.id, question)
+    redis_connect.set(update.effective_chat.id, question)
 
 
 def main():
@@ -99,20 +95,22 @@ def main():
     )
     args = parser.parse_args()
 
+    questions_and_answers = get_questions_answers(args.path)
+
     conv_handler = ConversationHandler(
         entry_points=[CommandHandler('start', start)],
         states={
             QUESTION: [MessageHandler(
                 Filters.regex(r'^Новый вопрос$'),
-                lambda update, context: handle_new_question_request(update, context, args.path),
+                lambda update, context: handle_new_question_request(update, context, questions_and_answers),
             ),
                        MessageHandler(
                 Filters.regex(r'^Сдаться$'),
-                lambda update, context: surrender(update, context, args.path),
+                lambda update, context: surrender(update, context, questions_and_answers),
             ),
                        MessageHandler(
                 Filters.text & (~Filters.command),
-                lambda update, context: handle_solution_attempt(update, context, args.path),
+                lambda update, context: handle_solution_attempt(update, context, questions_and_answers),
             ),
                        ],
         },
@@ -126,4 +124,5 @@ def main():
 
 
 if __name__ == '__main__':
+    redis_connect = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
     main()
