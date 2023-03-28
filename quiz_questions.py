@@ -16,8 +16,8 @@ def get_questions_answers(path_to_files):
     questions = []
     answers = []
     for file_name in files_names:
-        with open(os.path.join(path_to_files, file_name), "r", encoding="KOI8-R") as my_file:
-            file_contents = my_file.read().split('\n\n')
+        with open(os.path.join(path_to_files, file_name), "r", encoding="KOI8-R") as file_with_quest_answer:
+            file_contents = file_with_quest_answer.read().split('\n\n')
         for string in file_contents:
             if 'Вопрос' in string:
                 questions.append(' '.join(string.splitlines()))
