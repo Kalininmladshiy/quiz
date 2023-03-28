@@ -1,11 +1,5 @@
 import os
-import random
 import re
-
-
-def get_random_question(questions_and_answers):
-    random_question = random.choice(list(questions_and_answers))
-    return random_question
 
 
 def get_files_names(path):

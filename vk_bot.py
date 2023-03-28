@@ -10,7 +10,7 @@ from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 from dotenv import load_dotenv
 from pathlib import Path
 
-from quiz_questions import get_questions_answers, get_random_question
+from quiz_questions import get_questions_answers
 
 REDIS_CONNECT = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
 
@@ -28,7 +28,7 @@ def create_keyboard():
 
 def handle_new_question_request(event, vk_api, path):
     questions_and_answers = get_questions_answers(path)
-    question = get_random_question(questions_and_answers)
+    question = random.choice(list(questions_and_answers))
     vk_api.messages.send(
         user_id=event.user_id,
         message=question,
@@ -65,7 +65,7 @@ def surrender(event, vk_api, path):
         random_id=random.randint(1, 1000),
         keyboard=create_keyboard(),
     )
-    question = get_random_question(questions_and_answers)
+    question = random.choice(list(questions_and_answers))
     vk_api.messages.send(
         user_id=event.user_id,
         message=question,

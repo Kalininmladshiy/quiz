@@ -1,4 +1,5 @@
 import os
+import random
 import argparse
 import redis
 
@@ -11,7 +12,7 @@ from telegram.ext import CommandHandler, ConversationHandler
 from telegram.ext import Updater
 from telegram.ext import MessageHandler, Filters
 
-from quiz_questions import get_questions_answers, get_random_question
+from quiz_questions import get_questions_answers
 
 
 REDIS_CONNECT = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
@@ -33,7 +34,7 @@ def handle_new_question_request(update: Update, context: CallbackContext, path):
     keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
     reply_markup = ReplyKeyboardMarkup(keyboard)
     questions_and_answers = get_questions_answers(path)
-    question = get_random_question(questions_and_answers)
+    question = random.choice(list(questions_and_answers))
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=question,
@@ -72,7 +73,7 @@ def surrender(update: Update, context: CallbackContext, path):
         text=f"Вот тебе правильный ответ {answer}",
         reply_markup=reply_markup,
     )
-    question = get_random_question(questions_and_answers)
+    question = random.choice(list(questions_and_answers))
     context.bot.send_message(
         chat_id=update.effective_chat.id,
         text=question,
