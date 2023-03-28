@@ -1,10 +1,9 @@
-import os
 import random
 import argparse
 import redis
 
-from dotenv import load_dotenv
 from pathlib import Path
+from environs import Env
 
 from telegram import Update, ReplyKeyboardMarkup
 from telegram.ext import CallbackContext
@@ -15,6 +14,8 @@ from telegram.ext import MessageHandler, Filters
 from quiz_questions import get_questions_answers
 
 
+env = Env()
+env.read_env()
 QUESTION = 1
 
 
@@ -79,8 +80,7 @@ def surrender(update: Update, context: CallbackContext, questions_and_answers):
 
 
 def main():
-    load_dotenv()
-    tg_token = os.getenv('TG_BOT_TOKEN')
+    tg_token = env.str('TG_BOT_TOKEN')
 
     updater = Updater(token=tg_token)
     dispatcher = updater.dispatcher
@@ -124,5 +124,9 @@ def main():
 
 
 if __name__ == '__main__':
-    redis_connect = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
+    host = env.str('ALLOWED_HOSTS', 'localhost')
+    decode_responses = env.bool('DEBUG', True)
+    port = env.str('PORT', '6379')
+    db = env.str('PORT', '0')
+    redis_connect = redis.Redis(host=host, port=port, db=db, decode_responses=decode_responses)
     main()

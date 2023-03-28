@@ -1,5 +1,4 @@
 import random
-import os
 import redis
 import argparse
 
@@ -7,10 +6,14 @@ import vk_api as vk
 from vk_api.longpoll import VkLongPoll, VkEventType
 from vk_api.keyboard import VkKeyboard, VkKeyboardColor
 
-from dotenv import load_dotenv
+from environs import Env
 from pathlib import Path
 
 from quiz_questions import get_questions_answers
+
+
+env = Env()
+env.read_env()
 
 
 def create_keyboard():
@@ -71,9 +74,13 @@ def surrender(event, vk_api, questions_and_answers):
 
 
 if __name__ == "__main__":
-    redis_connect = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
-    load_dotenv()
-    vk_token = os.getenv("VK_BOT_TOKEN")
+    host = env.str('ALLOWED_HOSTS', 'localhost')
+    decode_responses = env.bool('DEBUG', True)
+    port = env.str('PORT', '6379')
+    db = env.str('PORT', '0')
+    redis_connect = redis.Redis(host=host, port=port, db=db, decode_responses=decode_responses)
+
+    vk_token = env.str("VK_BOT_TOKEN")
     vk_session = vk.VkApi(token=vk_token)
     vk_api = vk_session.get_api()
 
