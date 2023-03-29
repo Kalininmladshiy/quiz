@@ -23,7 +23,7 @@ def create_keyboard():
     return keyboard.get_keyboard()
 
 
-def handle_new_question_request(event, vk_api, questions_and_answers):
+def handle_new_question_request(event, vk_api, questions_and_answers, redis_connect):
     question = random.choice(list(questions_and_answers))
     vk_api.messages.send(
         user_id=event.user_id,
@@ -34,7 +34,7 @@ def handle_new_question_request(event, vk_api, questions_and_answers):
     redis_connect.set(event.user_id, question)
 
 
-def handle_solution_attempt(event, vk_api, questions_and_answers):
+def handle_solution_attempt(event, vk_api, questions_and_answers, redis_connect):
     if event.text.lower() == questions_and_answers[redis_connect.get(event.user_id)]:
         vk_api.messages.send(
             user_id=event.user_id,
@@ -51,7 +51,7 @@ def handle_solution_attempt(event, vk_api, questions_and_answers):
         )
 
 
-def surrender(event, vk_api, questions_and_answers):
+def surrender(event, vk_api, questions_and_answers, redis_connect):
     answer = questions_and_answers[redis_connect.get(event.user_id)]
     vk_api.messages.send(
         user_id=event.user_id,
@@ -69,7 +69,7 @@ def surrender(event, vk_api, questions_and_answers):
     redis_connect.set(event.user_id, question)
 
 
-if __name__ == "__main__":
+def main():
     env = Env()
     env.read_env()
     host = env.str('ALLOWED_HOSTS', 'localhost')
@@ -98,8 +98,12 @@ if __name__ == "__main__":
     for event in longpoll.listen():
         if event.type == VkEventType.MESSAGE_NEW and event.to_me:
             if event.text == "Сдаться":
-                surrender(event, vk_api, questions_and_answers)
+                surrender(event, vk_api, questions_and_answers, redis_connect)
             elif event.text == "Новый вопрос":
-                handle_new_question_request(event, vk_api, questions_and_answers)
+                handle_new_question_request(event, vk_api, questions_and_answers, redis_connect)
             else:
-                handle_solution_attempt(event, vk_api, questions_and_answers)
+                handle_solution_attempt(event, vk_api, questions_and_answers, redis_connect)
+
+
+if __name__ == "__main__":
+    main()
