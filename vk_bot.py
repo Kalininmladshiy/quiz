@@ -12,10 +12,6 @@ from pathlib import Path
 from quiz_questions import get_questions_answers
 
 
-env = Env()
-env.read_env()
-
-
 def create_keyboard():
     keyboard = VkKeyboard(one_time=False)
 
@@ -74,6 +70,8 @@ def surrender(event, vk_api, questions_and_answers):
 
 
 if __name__ == "__main__":
+    env = Env()
+    env.read_env()
     host = env.str('ALLOWED_HOSTS', 'localhost')
     decode_responses = env.bool('DECODE_RESPONSES', True)
     port = env.str('PORT', '6379')
