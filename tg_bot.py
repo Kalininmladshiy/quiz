@@ -80,7 +80,16 @@ def surrender(update: Update, context: CallbackContext, questions_and_answers):
     return SOLUTION
 
 
-def main():
+if __name__ == '__main__':
+    env = Env()
+    env.read_env()
+
+    host = env.str('ALLOWED_HOSTS', 'localhost')
+    decode_responses = env.bool('DECODE_RESPONSES', True)
+    port = env.str('PORT', '6379')
+    db = env.str('DB', '0')
+    redis_connect = redis.Redis(host=host, port=port, db=db, decode_responses=decode_responses)
+
     tg_token = env.str('TG_BOT_TOKEN')
 
     updater = Updater(token=tg_token)
@@ -115,7 +124,7 @@ def main():
                     lambda update, context: handle_solution_attempt(update, context, questions_and_answers),
                 )
             ],
-               },
+        },
         fallbacks=[
             CommandHandler('start', start),
         ]
@@ -123,14 +132,3 @@ def main():
     dispatcher.add_handler(conv_handler)
 
     updater.start_polling()
-
-
-if __name__ == '__main__':
-    env = Env()
-    env.read_env()
-    host = env.str('ALLOWED_HOSTS', 'localhost')
-    decode_responses = env.bool('DECODE_RESPONSES', True)
-    port = env.str('PORT', '6379')
-    db = env.str('DB', '0')
-    redis_connect = redis.Redis(host=host, port=port, db=db, decode_responses=decode_responses)
-    main()
