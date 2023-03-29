@@ -28,7 +28,7 @@ def start(update: Update, context: CallbackContext):
     return QUESTION
 
 
-def handle_new_question_request(update: Update, context: CallbackContext, questions_and_answers):
+def handle_new_question_request(update: Update, context: CallbackContext, questions_and_answers, redis_connect):
     keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
     reply_markup = ReplyKeyboardMarkup(keyboard)
     question = random.choice(list(questions_and_answers))
@@ -41,7 +41,7 @@ def handle_new_question_request(update: Update, context: CallbackContext, questi
     return SOLUTION
 
 
-def handle_solution_attempt(update: Update, context: CallbackContext, questions_and_answers):
+def handle_solution_attempt(update: Update, context: CallbackContext, questions_and_answers, redis_connect):
     keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
     reply_markup = ReplyKeyboardMarkup(keyboard)
     if update.message.text.lower() == questions_and_answers[
@@ -61,7 +61,7 @@ def handle_solution_attempt(update: Update, context: CallbackContext, questions_
         )
 
 
-def surrender(update: Update, context: CallbackContext, questions_and_answers):
+def surrender(update: Update, context: CallbackContext, questions_and_answers, redis_connect):
     keyboard = [['Новый вопрос', 'Сдаться'], ['Мой счет']]
     reply_markup = ReplyKeyboardMarkup(keyboard)
     answer = questions_and_answers[redis_connect.get(update.effective_chat.id)]
@@ -80,7 +80,7 @@ def surrender(update: Update, context: CallbackContext, questions_and_answers):
     return SOLUTION
 
 
-if __name__ == '__main__':
+def main():
     env = Env()
     env.read_env()
 
@@ -112,19 +112,19 @@ if __name__ == '__main__':
         states={
             QUESTION: [MessageHandler(
                 Filters.regex(r'^Новый вопрос$'),
-                lambda update, context: handle_new_question_request(update, context, questions_and_answers),
+                lambda update, context: handle_new_question_request(update, context, questions_and_answers, redis_connect),
             )],
             SOLUTION: [
                 MessageHandler(
                     Filters.regex(r'^Сдаться$'),
-                    lambda update, context: surrender(update, context, questions_and_answers),
+                    lambda update, context: surrender(update, context, questions_and_answers, redis_connect),
                 ),
                 MessageHandler(
                     Filters.text & (~Filters.command),
-                    lambda update, context: handle_solution_attempt(update, context, questions_and_answers),
+                    lambda update, context: handle_solution_attempt(update, context, questions_and_answers, redis_connect),
                 )
             ],
-        },
+               },
         fallbacks=[
             CommandHandler('start', start),
         ]
@@ -132,3 +132,7 @@ if __name__ == '__main__':
     dispatcher.add_handler(conv_handler)
 
     updater.start_polling()
+
+
+if __name__ == '__main__':
+    main()
